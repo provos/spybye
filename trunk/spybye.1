@@ -1,0 +1,105 @@
+.\" The following requests are required for all man pages.
+.Dd Feb 19, 2007
+.Dt SPYBYE 1
+.Os
+.Sh NAME
+.Nm spybye
+.Nd a proxy to help finding malware
+.Sh SYNOPSIS
+.\" For a program:  program [-abc] file ...
+.Nm crawl
+.Op Fl g Ar good patterns
+.Op Fl b Ar bad patterns
+.Op Fl p Ar port
+.Op Fl l Ar log file
+.Op Fl S Ar shareing url
+.Op Fl P
+.Op Fl I
+.Op Fl x
+.Sh DESCRIPTION
+The
+.Nm
+tool provide a proxy server through which web pages can be fetched and
+analyzed for potentially dangerous includes.
+To use
+.Nm ,
+you need to configure your web browser to use the port configured by
+.Fl p
+as proxy port.
+.Pp
+The options are as follows:
+.Bl -tag -width Ds_good_patterns
+.It Fl b Ar good patterns
+A file or URL from which good patterns can be loaded.
+Any URL that maches a good pattern is declared harmless.
+.It Fl b Ar bad patterns
+A file or URL from which bad patterns can be loaded.
+Any URL that matches a bad pattern is declared dangerous.
+.It Fl p Ar port
+The port number under which
+.Nm
+creates the proxy server.
+This is the port the web browser needs to contect to.
+.It Fl l Ar log file
+A filename to which potentially dangerous site interactions are being
+logged.
+.It Fl S Ar share url
+When
+.Nm
+finds a dangerous URL, it can be reported to the provided URL.
+By default, this points to
+.Va www.spybye.org .
+This option can be disabled by providing an empty string.
+.It Fl P
+By default,
+.Nm
+does not allow any fetches to private IP addresses.
+By specifying this option, web pages can be fetched from any IP address.
+.It Fl I
+Instead of injecting javascript,
+.Nm
+splits the browser window into two halfs.
+The first half shows the ongoing results of the analysis and the second
+half shows the contents of the analyzed web site.
+.It Fl x
+Puts
+.Nm
+into proxy mode.
+It's possible to browse the web normally, but
+.Nm
+is going to disallow fetches it deems dangerous.
+.El
+.Pp
+This tool is not very complicated and very straight forward.
+It uses the web browser to decode potentially obfuscated javascript and
+then traces all fetches the web browser makes.
+All URLs that have been classifies as dangerous are displayed in the
+overview page but the web broswer is denied access to them.
+For additional security, the referer header needs to match the already
+discovered URL space.
+Nonetheless, running
+.Nm
+could potentially get your computer infected when visiting a dangerous
+web page.
+So, ideally, your web browser should run within a virtual machine.
+.\" This next request is for sections 2 and 3 function return values only.
+.\" .Sh RETURN VALUES
+.\" The next request is for sections 2 and 3 error and signal handling only.
+.\" .Sh ERRORS
+.\" This next request is for section 4 only.
+.\" .Sh DIAGNOSTICS
+.\" This next request is for sections 1, 6, 7 & 8 only.
+.\" .Sh ENVIRONMENT
+.\" .Sh FILES
+.\" .Sh SEE ALSO
+.\" .Xr foobar 1
+.\" .Sh COMPATIBILITY
+.\" .Sh STANDARDS
+.\" .Sh ACKNOWLEDGEMENTS
+.Sh AUTHORS
+The
+.Nm
+utility has been developed by Niels Provos.
+.\" .Sh HISTORY
+.\" .Sh BUGS
+.\" .Sh CAVEATS
