@@ -584,6 +584,7 @@ void
 dns_free(struct dns_cache *entry)
 {
 	SPLAY_REMOVE(dns_tree, &root, entry);
+	free(entry->addresses);
 	free(entry->name);
 	free(entry);
 }
