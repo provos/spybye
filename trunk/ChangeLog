@@ -1,0 +1,2 @@
+Changes since SpyBye 0.3:
+ - fix a memory leak in dns_free from rabipaikaray
