@@ -1,0 +1,198 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(spybye.c)
+AC_CONFIG_SRCDIR(spybye.c)
+
+AC_CANONICAL_SYSTEM
+
+AM_INIT_AUTOMAKE(spybye, 0.3a)
+AM_CONFIG_HEADER(config.h)
+
+dnl Initialize prefix.
+if test "$prefix" = "NONE"; then
+   prefix="/usr/local"
+fi
+
+dnl Checks for programs.
+AC_PROG_CC
+AC_PROG_INSTALL
+
+dnl solaris sux.
+AC_MSG_CHECKING(if we may use "-I/usr/include")
+case "$target" in
+*-*-solaris*|*-*-sunos*)
+	USRINCLUDE=""
+	AC_MSG_RESULT(no)
+	;;
+*-*-linux*)
+	USRINCLUDE=""
+	AC_MSG_RESULT(no)
+	;;
+*)
+	USRINCLUDE="-I/usr/include/"
+	AC_MSG_RESULT(yes)
+	;;
+esac
+AC_SUBST(USRINCLUDE)
+
+dnl Checks for libraries.
+dnl Checks for libevent
+AC_MSG_CHECKING(for libevent)
+AC_ARG_WITH(libevent,
+[  --with-libevent=DIR      use libevent build directory],
+[ case "$withval" in
+  yes|no)
+     AC_MSG_RESULT(no)
+     ;;
+  *)
+     AC_MSG_RESULT($withval)
+     if test -f $withval/event.h -a -f $withval/libevent.a; then
+        owd=`pwd`
+        if cd $withval; then withval=`pwd`; cd $owd; fi
+        EVENTINC="-I$withval"
+        EVENTLIB="-L$withval -levent"
+     else
+        AC_ERROR(event.h or libevent.a not found in $withval)
+     fi
+     ;;
+  esac ],
+[ if test -f ${prefix}/include/event.h; then
+     EVENTINC="-I${prefix}/include"
+     EVENTLIB="-L${prefix}/lib -levent"
+  elif test -f /usr/include/event/event.h; then
+     EVENTINC="-I/usr/include/event"
+     EVENTLIB="-levent"
+  elif test -f /usr/include/event.h; then
+     EVENTLIB="-levent"
+  else
+     AC_MSG_RESULT(no)
+     AC_ERROR(libevent not found)
+  fi
+  AC_MSG_RESULT(yes) ]
+)
+AC_SUBST(EVENTINC)
+AC_SUBST(EVENTLIB)
+
+dnl Checks for (installed) libclamav
+CLAMAVINC=
+CLAMAVLIB=
+AC_ARG_WITH(libclamav,
+[  --with-libclamav=DIR      use libclamav in DIR],
+[ case "$withval" in
+  yes|no)
+     AC_ERROR([Please specify directory containing clamav-config when using --with-libclamav])
+     ;;
+  *)
+     AC_MSG_CHECKING(for libclamav)
+     AC_MSG_RESULT($withval)
+     if test -f $withval/src/libclamav.a; then
+	CLAMAVINC="-I$withval/include"
+	CLAMAVLIB="-L$withval/src -lclamav `$withval/clamav-config --libs`"
+        AC_DEFINE(HAVE_CLAMAV, 1, [Define if the system supports clamav])
+	needclamav=yes
+     elif test -x $withval/bin/clamav-config; then
+	CLAMAVINC="`$withval/bin/clamav-config --cflags`"
+	CLAMAVLIB="`$withval/bin/clamav-config --libs` -lclamav"
+	AC_DEFINE(HAVE_CLAMAV, 1, [Define if the system supports clamav])
+     fi
+     ;;
+  esac
+  ],
+[ dnl This is the default case so let's just use AC_PATH_PROG! --CPK.
+  AC_PATH_PROG(clamavconfig, clamav-config, "no")
+  if test "$clamavconfig" != "no"; then
+     CLAMAVINC="`$clamavconfig --cflags`"
+     CLAMAVLIB="`$clamavconfig --libs` -lclamav"
+     AC_DEFINE(HAVE_CLAMAV, 1, [Define if the system supports clamav])
+  fi]
+)
+
+AC_SUBST(CLAMAVINC)
+AC_SUBST(CLAMAVLIB)
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS(libgen.h unistd.h sys/time.h sys/queue.h)
+if test "x$ac_cv_header_sys_queue_h" = "xyes"; then
+	AC_MSG_CHECKING(for TAILQ_FOREACH in sys/queue.h)
+	AC_EGREP_CPP(yes,
+[
+#include <sys/queue.h>
+#ifdef TAILQ_FOREACH
+ yes
+#endif
+],	[AC_MSG_RESULT(yes)
+	 AC_DEFINE(HAVE_TAILQFOREACH, 1,
+	  [Define if queue.h defines TAILQFOREEACH]) ], AC_MSG_RESULT(no)
+	)
+fi
+if test "x$ac_cv_header_sys_queue_h" = "xyes"; then
+	AC_MSG_CHECKING(for LIST_FIRST in sys/queue.h)
+	AC_EGREP_CPP(yes,
+[
+#include <sys/queue.h>
+#ifdef LIST_FIRST
+ yes
+#endif
+],	[AC_MSG_RESULT(yes)
+	 AC_DEFINE(HAVE_LISTFIRST,1,
+	   [Define if queue.h has LISTFIRST]) ], AC_MSG_RESULT(no)
+	)
+fi
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_SIZE_T
+AC_CHECK_TYPE(u_int64_t, unsigned long long)
+AC_CHECK_TYPE(u_int32_t, unsigned int)
+AC_CHECK_TYPE(u_int16_t, unsigned short)
+AC_CHECK_TYPE(u_int8_t, unsigned char)
+AC_HEADER_TIME
+
+dnl XXX - Solaris sux.
+AC_CHECK_LIB(socket, socket)
+
+dnl Checks for library functions.
+AC_CHECK_FUNCS(gettimeofday memmove memset strcasecmp strchr strdup strncasecmp)
+AC_REPLACE_FUNCS(strlcat strlcpy strsep strnstr strncasestr)
+
+needmd5=no
+AC_MSG_CHECKING([for md5 in libc])
+AC_TRY_LINK([
+#include <sys/types.h>
+#include <md5.h>],[
+MD5_CTX ctx;
+MD5Init(&ctx);
+MD5Update(&ctx, "a", 1);
+MD5Final((void *)0, &ctx);
+], AC_MSG_RESULT([yes]),
+[AC_MSG_RESULT([no])
+needmd5=yes])
+if test $needmd5 = yes; then
+   AC_LIBOBJ([md5])
+fi
+
+neederr=no
+AC_CHECK_FUNCS(warnx, , [neederr=yes])
+if test $neederr = yes; then
+   AC_LIBOBJ([err])
+fi
+
+AC_MSG_CHECKING([for timeradd in sys/time.h])
+AC_EGREP_CPP(yes,
+[
+#include <sys/time.h>
+#ifdef timeradd
+yes
+#endif
+],	[ AC_DEFINE(HAVE_TIMERADD, 1, [Define if your system has timeradd])
+	  AC_MSG_RESULT([yes])], AC_MSG_RESULT([no])
+)
+
+CFLAGS=$CLAMAVINC
+AC_CHECK_MEMBER(struct cl_limits.maxmailrec,
+	[ AC_DEFINE(HAVE_CLLIMITS_MAXMAILREC, 1, [Define if cl_limits has maxmailrec]) ], 
+	[],
+        [#include <clamav.h>])
+CFLAGS=
+
+AC_OUTPUT(Makefile)

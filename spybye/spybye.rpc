@@ -1,0 +1,35 @@
+/*
+ * Copyright 2007 Niels Provos <provos@citi.umich.edu>
+ * All rights reserved.
+ */
+
+/* data structures for easy storing of state on disk */
+
+struct dangerousload {
+       int time_in_seconds = 1;
+       string parent_url = 2;
+       string dangerous_url = 3;
+       optional string virus_result = 4;
+       optional bytes digest[16] = 5;
+}
+
+struct dangerous_report {
+       int time_in_seconds = 1;
+       string remote_ip = 2;
+       struct[dangerousload] report = 3;
+}
+
+/* data structure for virus scanning */
+
+#define VIRUSSCAN_TAG	0x01
+#define VIRUSRESULT_TAG	0x02
+
+struct virusscan {
+       bytes buffer = 1;	/* the content to scan */
+       bytes context = 2;	/* the context to return */
+}
+
+struct virusresult {
+       string result = 1;	/* the result of the scan */
+       bytes context = 2;	/* the quoted context */
+}
